@@ -5,7 +5,7 @@ module Blacklight
     attr_writer :connection
 
     # ActiveSupport::Benchmarkable requires a logger method
-    attr_accessor :logger
+    attr_writer :logger
 
     include ActiveSupport::Benchmarkable
 
@@ -29,6 +29,18 @@ module Blacklight
     # Execute a search query against a search index
     # @param [Hash] params query parameters
     def search(_params = {})
+      raise NotImplementedError
+    end
+
+    # Query the fields that exist from the index
+    # @return [Hash]
+    def reflect_fields
+      raise NotImplementedError
+    end
+
+    ##
+    # Is the repository in a working state?
+    def ping
       raise NotImplementedError
     end
 

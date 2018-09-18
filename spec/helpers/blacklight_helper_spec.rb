@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 RSpec.describe BlacklightHelper do
-  before(:each) do
+  before do
     allow(helper).to receive(:current_or_guest_user).and_return(User.new)
     allow(helper).to receive(:search_action_path) do |*args|
       search_catalog_url *args
@@ -8,8 +8,38 @@ RSpec.describe BlacklightHelper do
   end
 
   describe "#application_name" do
+    before do
+      allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::NullStore.new)
+    end
+
     it "defaults to 'Blacklight'" do
       expect(application_name).to eq "Blacklight"
+    end
+
+    context "when the language is not english " do
+      around do |example|
+        I18n.locale = :de
+        example.run
+        I18n.locale = :en
+      end
+
+      context "and no translation exists for that language" do
+        it "defaults to 'Blacklight'" do
+          expect(application_name).to eq "Blacklight"
+        end
+      end
+
+      context "and a translation exists for that language" do
+        around do |example|
+          I18n.backend.store_translations(:de, 'blacklight' => { 'application_name' => 'Schwarzlicht' })
+          example.run
+          I18n.backend.reload!
+        end
+
+        it "uses the provided value" do
+          expect(application_name).to eq "Schwarzlicht"
+        end
+      end
     end
   end
 
@@ -34,7 +64,7 @@ RSpec.describe BlacklightHelper do
     let(:presenter) { Blacklight::IndexPresenter.new(document, view_context) }
     let(:blacklight_config) do
       Blacklight::Configuration.new.configure do |config|
-        config.index.title_field = 'title_display'
+        config.index.title_field = 'title_tsim'
         config.index.display_type_field = 'format'
       end
     end
@@ -58,11 +88,11 @@ RSpec.describe BlacklightHelper do
   describe "with a config" do
     let(:config) do
       Blacklight::Configuration.new.configure do |config|
-        config.index.title_field = 'title_display'
+        config.index.title_field = 'title_tsim'
         config.index.display_type_field = 'format'
       end
     end
-    let(:document) { SolrDocument.new('title_display' => "A Fake Document", 'id'=>'8') }
+    let(:document) { SolrDocument.new('title_tsim' => "A Fake Document", 'id' => '8') }
 
     before do
       config.add_show_tools_partial(:bookmark, partial: 'catalog/bookmark_control')
@@ -75,7 +105,7 @@ RSpec.describe BlacklightHelper do
     describe "render_nav_actions" do
       it "renders partials" do
         buff = String.new
-        helper.render_nav_actions { |config, item| buff << "<foo>#{item}</foo>" }
+        helper.render_nav_actions { |_config, item| buff << "<foo>#{item}</foo>" }
         expect(buff).to have_selector "foo a#bookmarks_nav[href=\"/bookmarks\"]"
         expect(buff).to have_selector "foo a span[data-role='bookmark-counter']", text: '0'
       end
@@ -150,21 +180,22 @@ RSpec.describe BlacklightHelper do
 
   describe "#document_has_value?" do
     let(:doc) { double(SolrDocument) }
+
     it "ifs the document has the field value" do
       allow(doc).to receive(:has?).with('asdf').and_return(true)
-      field_config = double(:field => 'asdf')
+      field_config = double(field: 'asdf')
       expect(helper.document_has_value?(doc, field_config)).to eq true
     end
     it "ifs the document has a highlight field value" do
       allow(doc).to receive(:has?).with('asdf').and_return(false)
       allow(doc).to receive(:has_highlight_field?).with('asdf').and_return(true)
-      field_config = double(:field => 'asdf', :highlight => true)
+      field_config = double(field: 'asdf', highlight: true)
       expect(helper.document_has_value?(doc, field_config)).to eq true
     end
     it "ifs the field has a model accessor" do
       allow(doc).to receive(:has?).with('asdf').and_return(false)
       allow(doc).to receive(:has_highlight_field?).with('asdf').and_return(false)
-      field_config = double(:field => 'asdf', :highlight => true, :accessor => true)
+      field_config = double(field: 'asdf', highlight: true, accessor: true)
       expect(helper.document_has_value?(doc, field_config)).to eq true
     end
   end
@@ -189,22 +220,28 @@ RSpec.describe BlacklightHelper do
     before do
       allow(helper).to receive_messages spell_check_max: 5
     end
+
     it "does not show suggestions if there are enough results" do
       response = double(total: 10)
-      expect(helper.should_show_spellcheck_suggestions? response).to be false
+      expect(helper.should_show_spellcheck_suggestions?(response)).to be false
     end
-    it "onlies show suggestions if there are very few results" do
+    it "only shows suggestions if there are very few results" do
       response = double(total: 4, spelling: double(words: [1]))
-      expect(helper.should_show_spellcheck_suggestions? response).to be true
+      expect(helper.should_show_spellcheck_suggestions?(response)).to be true
     end
     it "shows suggestions only if there are spelling suggestions available" do
       response = double(total: 4, spelling: double(words: []))
-      expect(helper.should_show_spellcheck_suggestions? response).to be false
+      expect(helper.should_show_spellcheck_suggestions?(response)).to be false
+    end
+    it "does not show suggestions if spelling is not available" do
+      response = double(total: 4, spelling: nil)
+      expect(helper.should_show_spellcheck_suggestions?(response)).to be false
     end
   end
 
   describe "#opensearch_description_tag" do
     subject { helper.opensearch_description_tag 'title', 'href' }
+
     it "has a search rel" do
       expect(subject).to have_selector "link[rel='search']", visible: false
     end
@@ -229,6 +266,7 @@ RSpec.describe BlacklightHelper do
 
   describe "#render_document_index_with_view" do
     let(:obj1) { SolrDocument.new }
+
     before do
       allow(helper).to receive(:blacklight_config).and_return(CatalogController.blacklight_config)
       assign(:response, instance_double(Blacklight::Solr::Response, grouped?: false, start: 0))
@@ -289,6 +327,7 @@ RSpec.describe BlacklightHelper do
   context "related classes" do
     let(:presenter_class) { double }
     let(:blacklight_config) { Blacklight::Configuration.new }
+
     before do
       allow(helper).to receive(:blacklight_config).and_return(blacklight_config)
     end
@@ -318,6 +357,7 @@ RSpec.describe BlacklightHelper do
 
   describe "#render_document_heading" do
     let(:document) { double }
+
     before do
       allow(helper).to receive(:presenter).and_return(double(heading: "Heading"))
     end
@@ -327,7 +367,7 @@ RSpec.describe BlacklightHelper do
     end
 
     it "accepts the tag name as an option" do
-      expect(helper.render_document_heading tag: "h1").to have_selector "h1", text: "Heading"
+      expect(helper.render_document_heading(tag: "h1")).to have_selector "h1", text: "Heading"
     end
 
     it "accepts an explicit document argument" do

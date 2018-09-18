@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-RSpec.describe Blacklight::Document do
-  let(:data) { {} }
+RSpec.describe Blacklight::Document, api: true do
   subject do
     Class.new do
       include Blacklight::Document
     end.new(data)
   end
+
+  let(:data) { {} }
 
   describe "#has?" do
     context "without value constraints" do
@@ -14,7 +15,7 @@ RSpec.describe Blacklight::Document do
         data[:x] = true
         expect(subject).to have_field(:x)
       end
-      
+
       it "does not have the field if the field is not in the data" do
         expect(subject).not_to have_field(:x)
       end
@@ -25,7 +26,7 @@ RSpec.describe Blacklight::Document do
         data[:x] = true
         expect(subject).to have_field(:x, true)
       end
-      
+
       it "does not have the field if the data does not have that value" do
         data[:x] = false
         expect(subject).not_to have_field(:x, true)
@@ -37,12 +38,12 @@ RSpec.describe Blacklight::Document do
       end
 
       it "supports multivalued fields" do
-        data[:x] = ["a", "b", "c"]
+        data[:x] = %w[a b c]
         expect(subject).to have_field(:x, "a")
       end
 
       it "supports multivalued fields with an array of value constraints" do
-        data[:x] = ["a", "b", "c"]
+        data[:x] = %w[a b c]
         expect(subject).to have_field(:x, "a", "d")
       end
     end
@@ -75,12 +76,12 @@ RSpec.describe Blacklight::Document do
       end
 
       def documents
-        response.collect {|doc| MockDocument.new(doc, self)}
+        response.collect { |doc| MockDocument.new(doc, self) }
       end
     end
 
     before do
-      allow(MockDocument).to receive(:repository).and_return(instance_double(Blacklight::Solr::Repository, find: MockResponse.new([{id: 1}], {})))
+      allow(MockDocument).to receive(:repository).and_return(instance_double(Blacklight::Solr::Repository, find: MockResponse.new([{ id: 1 }], {})))
     end
 
     it "has a globalid" do

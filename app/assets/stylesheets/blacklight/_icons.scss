@@ -1,42 +1,35 @@
 .blacklight-icons {
-  display: inline-block;
+  display: inline-flex;
   height: $font-size-base;
-  vertical-align: text-top;
   width: $font-size-base;
 }
 
-.btn-primary {
-  .blacklight-icons g {
-    @include stroke-yiq(theme-color("primary"));
-  }
+.blacklight-icons svg {
+  height: 1rem;
+  width: 1rem;
+  top: .125rem;
+  position: relative;
 }
 
-.btn-light {
-  .blacklight-icons g {
-    @include stroke-yiq(theme-color("light"));
+@each $color, $value in $theme-colors {
+  .btn-#{$color} {
+    .blacklight-icons g {
+      @include stroke-yiq(theme-color($color));
+    }
   }
-}
 
-.btn-info {
-  .blacklight-icons g {
-    @include stroke-yiq(theme-color("info"));
-  }
-}
+  .btn-outline-#{$color} {
+    .blacklight-icons g {
+      stroke: $value;
+    }
 
-.btn-success {
-  .blacklight-icons g {
-    @include stroke-yiq(theme-color("success"));
-  }
-}
-
-.btn-warning {
-  .blacklight-icons g {
-    @include stroke-yiq(theme-color("warning"));
-  }
-}
-
-.btn-danger {
-  .blacklight-icons g {
-    @include stroke-yiq(theme-color("danger"));
+    &.hover,
+    &:hover,
+    &:active,
+    &.active {
+      .blacklight-icons g {
+        @include stroke-yiq(theme-color($color));
+      }
+    }
   }
 }

@@ -5,9 +5,9 @@ inherit_from:
 
 AllCops:
   DisplayCopNames: true
+  TargetRubyVersion: 2.3
   Exclude:
   - "lib/generators/blacklight/templates/**/*"
-  - "spec/**/*"
   - "blacklight.gemspec"
 
 Rails:
@@ -15,11 +15,19 @@ Rails:
 
 Metrics/BlockLength:
   Exclude:
+    - "app/views/catalog/index.json.jbuilder"
     - "lib/railties/blacklight.rake"
     - "tasks/blacklight.rake"
+    - "spec/**/*"
+
+Metrics/ClassLength:
+  Exclude:
+    - "lib/blacklight/configuration.rb"
 
 Metrics/LineLength:
   Max: 200
+  Exclude:
+    - 'spec/**/*'
 
 Style/StringLiterals:
   Enabled: false
@@ -30,7 +38,7 @@ Layout/IndentationConsistency:
 Rails/OutputSafety:
   Enabled: false
 
-Style/MethodMissing:
+Style/MissingRespondToMissing:
   Exclude:
   - 'lib/blacklight/nested_open_struct_with_hash_access.rb'
 
@@ -43,3 +51,6 @@ Bundler/DuplicatedGem:
 Bundler/OrderedGems:
   Exclude:
   - 'Gemfile'
+
+Naming/HeredocDelimiterNaming:
+  Enabled: false

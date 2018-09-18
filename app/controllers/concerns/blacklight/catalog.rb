@@ -3,15 +3,16 @@ module Blacklight::Catalog
   extend ActiveSupport::Concern
 
   include Blacklight::Base
-  include Blacklight::DefaultComponentConfiguration
   include Blacklight::Facet
 
   # The following code is executed when someone includes blacklight::catalog in their
   # own controller.
   included do
-    helper_method :sms_mappings, :has_search_parameters?, :facet_limit_for
+    if respond_to? :helper_method
+      helper_method :sms_mappings, :has_search_parameters?, :facet_limit_for
+    end
 
-    helper Blacklight::Facet
+    helper Blacklight::Facet if respond_to? :helper
 
     # The index action will more than likely throw this one.
     # Example: when the standard query parser is used, and a user submits a "bad" query.
@@ -32,7 +33,6 @@ module Blacklight::Catalog
       format.atom { render layout: false }
       format.json do
         @presenter = Blacklight::JsonPresenter.new(@response,
-                                                   facets_from_request,
                                                    blacklight_config)
       end
       additional_response_formats(format)
@@ -48,7 +48,7 @@ module Blacklight::Catalog
 
     respond_to do |format|
       format.html { @search_context = setup_next_and_previous_documents }
-      format.json { render json: { response: { document: @document } } }
+      format.json
       additional_export_formats(@document, format)
     end
   end
@@ -59,11 +59,12 @@ module Blacklight::Catalog
     search_session['id'] = params[:search_id]
     search_session['per_page'] = params[:per_page]
 
-    if params[:redirect] && (params[:redirect].starts_with?('/') || params[:redirect] =~ URI.regexp)
-      path = URI.parse(params[:redirect]).path
+    if params[:redirect] && (params[:redirect].starts_with?('/') || params[:redirect] =~ URI::DEFAULT_PARSER.make_regexp)
+      uri = URI.parse(params[:redirect])
+      path = uri.query ? "#{uri.path}?#{uri.query}" : uri.path
       redirect_to path, status: 303
     else
-      redirect_to blacklight_config.document_model.new(id: params[:id]), status: 303
+      redirect_to({ action: :show, id: params[:id] }, status: 303)
     end
   end
 
@@ -100,6 +101,8 @@ module Blacklight::Catalog
     end
   end
 
+  # @return [Array] first value is a Blacklight::Solr::Response and the second
+  #                 is a list of documents
   def action_documents
     search_service.fetch(Array(params[:id]))
   end
@@ -147,6 +150,10 @@ module Blacklight::Catalog
   #
   # non-routable methods ->
   #
+
+  def render_sms_action?(_config, _options)
+    sms_mappings.present?
+  end
 
   def search_service
     search_service_class.new(blacklight_config, search_state.to_h)
@@ -254,7 +261,7 @@ module Blacklight::Catalog
       flash[:error] = I18n.t('blacklight.sms.errors.carrier.blank')
     elsif params[:to].gsub(/[^\d]/, '').length != 10
       flash[:error] = I18n.t('blacklight.sms.errors.to.invalid', to: params[:to])
-    elsif !sms_mappings.values.include?(params[:carrier])
+    elsif !sms_mappings.value?(params[:carrier])
       flash[:error] = I18n.t('blacklight.sms.errors.carrier.invalid')
     end
 

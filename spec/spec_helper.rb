@@ -5,7 +5,7 @@
 
 ENV["RAILS_ENV"] ||= 'test'
 
-if ENV["COVERAGE"] or ENV["CI"]
+if ENV["COVERAGE"] || ENV["CI"]
   require 'simplecov'
   require 'coveralls'
 
@@ -32,7 +32,7 @@ Capybara.javascript_driver = :headless_chrome
 
 Capybara.register_driver :headless_chrome do |app|
   capabilities = Selenium::WebDriver::Remote::Capabilities.chrome(
-    chromeOptions: { args: %w[headless disable-gpu] }
+    chromeOptions: { args: %w[headless disable-gpu no-sandbox] }
   )
 
   Capybara::Selenium::Driver.new(app,
@@ -44,10 +44,13 @@ end
 # in spec/support/ and its subdirectories.
 # Blacklight, again, make sure we're looking in the right place for em.
 # Relative to HERE, NOT to Rails.root, which is off somewhere else.
-Dir[Pathname.new(File.expand_path("../support/**/*.rb", __FILE__))].each {|f| require f}
+Dir[Pathname.new(File.expand_path('support/**/*.rb', __dir__))].each { |f| require f }
 
 RSpec.configure do |config|
   config.disable_monkey_patching!
+
+  # When we're testing the API, only run the api tests
+  config.filter_run api: true if ENV['BLACKLIGHT_API_TEST']
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_path = "#{::Rails.root}/spec/fixtures"
@@ -61,6 +64,7 @@ RSpec.configure do |config|
     config.include Devise::Test::ControllerHelpers, type: :controller
   else
     config.include Devise::TestHelpers, type: :controller
+    config.include Devise::TestHelpers, type: :i18n
   end
 
   config.infer_spec_type_from_file_location!

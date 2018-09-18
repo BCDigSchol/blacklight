@@ -13,7 +13,6 @@ en:
 
   blacklight:
     application_name: 'Blacklight'
-
     header_links:
       login: 'Login'
       logout: 'Log Out'
@@ -124,13 +123,12 @@ en:
     back_to_bookmarks: 'Back to Bookmarks'
 
     search:
-      # i18n key 'title' is deprecated and will be removed in Blacklight 6.0
-      title: '%{application_name} Search Results'
       page_title:
         title: '%{constraints} - %{application_name} Search Results'
         constraint: '%{label}: %{value}'
         many_constraint_values: '%{values} selected'
-      search_results_header: 'Search Constraints'
+      header: 'Search'
+      search_constraints_header: 'Search Constraints'
       search_results: 'Search Results'
       errors:
         request_error: "Sorry, I don't understand your search."
@@ -176,6 +174,7 @@ en:
         selected:
           remove: '[remove]'
         missing: "[Missing]"
+        all: All
       group:
         more: 'more »'
       filters:

@@ -11,8 +11,8 @@ RSpec.describe "Search Page" do
       expect(page).to have_selector('option', text: 'Subject')
     end
     expect(page).to have_selector("button[type='submit'] .submit-search-text")
-    expect(page).to_not have_link "Start Over"
-   
+    expect(page).not_to have_link "Start Over"
+
     expect(page).to have_content "Welcome!"
     tmp_value = Capybara.ignore_hidden_elements
     Capybara.ignore_hidden_elements = false
@@ -25,7 +25,7 @@ RSpec.describe "Search Page" do
     fill_in "q", with: 'history'
     select 'All Fields', from: 'search_field'
     click_button 'search'
-   
+
     tmp_value = Capybara.ignore_hidden_elements
     Capybara.ignore_hidden_elements = false
     expect(page).to have_selector("link[rel=alternate][type='application/rss+xml']")
@@ -49,7 +49,7 @@ RSpec.describe "Search Page" do
 
     within ("#sortAndPerPage") do
       expect(page).to have_content "Sort by"
-      expect(page).to have_content "1 - 9 of 9"
+      expect(page).to have_content "1 - 10 of 11"
       within '#sort-dropdown' do
         expect(page).to have_link('relevance')
         expect(page).to have_link('year')
@@ -58,7 +58,7 @@ RSpec.describe "Search Page" do
       end
     end
     within "#documents" do
-      expect(page).to have_selector(".document", count: 9)
+      expect(page).to have_selector(".document", count: 10)
     end
   end
 
@@ -108,11 +108,11 @@ RSpec.describe "Search Page" do
     click_link "Start Over"
 
     expect(page).to have_content "Welcome!"
-    expect(page).to_not have_selector "#q[value='history']"
+    expect(page).not_to have_selector "#q[value='history']"
   end
 
   it "handles searches with invalid facet parameters" do
-    visit root_path f: { missing_s: [1]}
+    visit root_path f: { missing_s: [1] }
     expect(page).to have_content "No results found for your search"
   end
 end
